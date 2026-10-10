@@ -17,6 +17,8 @@ use super::LineWrapper;
 /// A laid out and styled line of text
 #[derive(Default, Debug)]
 pub struct LineLayout {
+    /// Bidirectional geometry, carried by fast shaping caches.
+    pub fast_bidi: Option<Arc<crate::fast::bidi::BidiGeometry>>,
     /// The font size for this line
     pub font_size: Pixels,
     /// The width of the line
@@ -59,6 +61,9 @@ pub struct ShapedGlyph {
 impl LineLayout {
     /// The index for the character at the given x coordinate
     pub fn index_for_x(&self, x: Pixels) -> Option<usize> {
+        if let Some(geometry) = &self.fast_bidi {
+            return (x >= px(0.) && x < self.width).then(|| geometry.closest(x));
+        }
         if x >= self.width {
             None
         } else {
@@ -76,6 +81,9 @@ impl LineLayout {
     /// closest_index_for_x returns the character boundary closest to the given x coordinate
     /// (e.g. to handle aligning up/down arrow keys)
     pub fn closest_index_for_x(&self, x: Pixels) -> usize {
+        if let Some(geometry) = &self.fast_bidi {
+            return geometry.closest(x);
+        }
         let mut prev_index = 0;
         let mut prev_x = px(0.);
 
@@ -106,6 +114,9 @@ impl LineLayout {
 
     /// The x position of the character at the given index
     pub fn x_for_index(&self, index: usize) -> Pixels {
+        if let Some(geometry) = &self.fast_bidi {
+            return geometry.x(index);
+        }
         for run in &self.runs {
             for glyph in &run.glyphs {
                 if glyph.index >= index {
@@ -136,6 +147,9 @@ impl LineLayout {
     ///   shifted left so the first glyph starts at x=0, and byte indices rebased to 0.
     /// - `font_size`, `ascent`, and `descent` are copied to both halves.
     pub fn split_at(&self, byte_index: usize) -> (LineLayout, LineLayout) {
+        if crate::fast::bidi::has_geometry(self) {
+            return crate::fast::bidi::split(self, byte_index);
+        }
         let x_offset = self.x_for_index(byte_index);
 
         // Partition glyph runs. A single run may contribute glyphs to both halves.
@@ -170,6 +184,7 @@ impl LineLayout {
         }
 
         let left = LineLayout {
+            fast_bidi: Default::default(),
             font_size: self.font_size,
             width: x_offset,
             ascent: self.ascent,
@@ -179,6 +194,7 @@ impl LineLayout {
         };
 
         let right = LineLayout {
+            fast_bidi: Default::default(),
             font_size: self.font_size,
             width: self.width - x_offset,
             ascent: self.ascent,
@@ -1074,6 +1090,7 @@ mod tests {
 
     fn make_layout(glyphs: Vec<ShapedGlyph>) -> LineLayout {
         LineLayout {
+            fast_bidi: Default::default(),
             font_size: px(16.),
             width: px(100.),
             ascent: px(12.),

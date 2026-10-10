@@ -625,6 +625,7 @@ impl MacTextSystemState {
         }
         let typographic_bounds = line.get_typographic_bounds();
         LineLayout {
+            fast_bidi: crate::fast::text_system::bidi_geometry(text, &line),
             runs,
             font_size,
             width: typographic_bounds.width.into(),

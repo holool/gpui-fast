@@ -139,3 +139,6 @@ unsafe impl objc::Encode for NSRange {
 unsafe fn ns_string(string: &str) -> id {
     unsafe { NSString::alloc(nil).init_str(string).autorelease() }
 }
+
+#[cfg(all(feature = "test-support", feature = "font-kit"))]
+pub use fast::text_system::text_system_for_tests;

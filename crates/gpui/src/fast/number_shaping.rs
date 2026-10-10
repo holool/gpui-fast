@@ -191,6 +191,7 @@ fn put_together(
     }
     let (_, last) = previous?;
     Some(LineLayout {
+        fast_bidi: Default::default(),
         font_size,
         width: px(x + last.advance),
         ascent: font.ascent,

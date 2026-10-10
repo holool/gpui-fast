@@ -1604,6 +1604,7 @@ impl PlatformTextSystem for NoopTextSystem {
         }
 
         LineLayout {
+            fast_bidi: Default::default(),
             font_size,
             width: position,
             ascent: font_size * (metrics.ascent / metrics.units_per_em as f32),

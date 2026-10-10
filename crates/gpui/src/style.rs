@@ -174,10 +174,15 @@ pub struct GridTemplate {
     pub min_size: GridTemplateMinSize,
 }
 
+type LogicalStyleRefinement = crate::fast::direction::LogicalStyleRefinement;
+
 /// The CSS styling that can be applied to an element via the `Styled` trait
 #[derive(Clone, Refineable, Debug)]
 #[refineable(Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct Style {
+    /// Logical inline edges, resolved by fast direction at layout request time.
+    #[refineable]
+    pub fast_logical: crate::fast::direction::LogicalStyle,
     /// What layout strategy should be used?
     pub display: Display,
 
@@ -436,6 +441,9 @@ pub enum TextAlign {
 #[derive(Refineable, Clone, Debug, PartialEq)]
 #[refineable(Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct TextStyle {
+    /// Inherited inline direction, including fast retained layout contexts.
+    pub fast_direction: crate::fast::direction::LayoutDirection,
+
     /// The color of the text
     pub color: Hsla,
 
@@ -485,6 +493,7 @@ pub struct TextStyle {
 impl Default for TextStyle {
     fn default() -> Self {
         TextStyle {
+            fast_direction: crate::fast::direction::LayoutDirection::default(),
             color: black(),
             // todo(linux) make this configurable or choose better default
             font_family: ".SystemUIFont".into(),
@@ -781,6 +790,7 @@ impl Default for Style {
             restrict_scroll_to_axis: false,
             scrollbar_width: AbsoluteLength::default(),
             position: Position::Relative,
+            fast_logical: crate::fast::direction::LogicalStyle::default(),
             inset: Edges::auto(),
             margin: Edges::<Length>::zero(),
             padding: Edges::<DefiniteLength>::zero(),

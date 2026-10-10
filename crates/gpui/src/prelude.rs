@@ -7,3 +7,6 @@ pub use crate::{
     ParentElement, Refineable, Render, RenderOnce, StatefulInteractiveElement, Styled, StyledImage,
     TaskExt as _, VisualContext, util::FluentBuilder,
 };
+
+// Holool direction extension, implemented in fast/.
+pub use crate::fast::direction::Directional;

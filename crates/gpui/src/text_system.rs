@@ -740,6 +740,11 @@ impl WindowTextSystem {
         wrap_width: Option<Pixels>,
         line_clamp: Option<usize>,
     ) -> Result<SmallVec<[WrappedLine; 1]>> {
+        if crate::fast::bidi::has_rtl(&text) {
+            return crate::fast::bidi::shape_text_auto(
+                self, text, font_size, runs, wrap_width, line_clamp,
+            );
+        }
         let mut runs = runs.iter().filter(|run| run.len > 0).cloned().peekable();
         let mut font_runs = self.font_runs_pool.lock().pop().unwrap_or_default();
 
@@ -810,6 +815,7 @@ impl WindowTextSystem {
             wrapped_lines += layout.wrap_boundaries.len();
 
             lines.push(WrappedLine {
+                fast_soft_wrap: false,
                 layout,
                 decoration_runs,
                 text: line_text,

@@ -3008,6 +3008,8 @@ dependencies = [
  "taffy 0.14.0",
  "thiserror 2.0.17",
  "ttf-parser",
+ "unicode-bidi",
+ "unicode-linebreak",
  "unicode-segmentation",
  "url",
  "usvg",

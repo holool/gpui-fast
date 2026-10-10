@@ -380,6 +380,7 @@ mod tests {
             })
             .collect();
         LineLayout {
+            fast_bidi: Default::default(),
             runs,
             width: px(index as f32 * 10.0),
             font_size: px(14.0),

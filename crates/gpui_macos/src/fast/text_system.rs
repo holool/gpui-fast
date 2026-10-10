@@ -69,3 +69,103 @@ mod tests {
         assert_eq!(shape(24.), larger);
     }
 }
+
+#[cfg(test)]
+mod rtl_tests {
+    use crate::MacTextSystem;
+    use gpui::{LayoutDirection, TextRun, TextSystem, WindowTextSystem, black, font, px};
+    use std::sync::Arc;
+    #[test]
+    fn native_arabic_caret_geometry_and_wrapping_preserve_utf8() {
+        let system =
+            WindowTextSystem::new(Arc::new(TextSystem::new(Arc::new(MacTextSystem::new()))));
+        for text in ["مرحبا", "أَهْلاً", "لا", "مرحبا بالعالم"] {
+            let runs = [TextRun {
+                len: text.len(),
+                font: font("Arial"),
+                color: black(),
+                background_color: None,
+                underline: None,
+                strikethrough: None,
+            }];
+            let line = system.shape_line_in_direction(
+                text.into(),
+                px(20.),
+                &runs,
+                None,
+                LayoutDirection::Rtl,
+            );
+            assert!(
+                (line.x_for_index(0) - line.width).abs() < px(0.1),
+                "start: {text}"
+            );
+            assert!(line.x_for_index(text.len()).abs() < px(0.1), "end: {text}");
+            assert_eq!(line.closest_index_for_x(line.width + px(20.)), 0);
+            assert_eq!(line.closest_index_for_x(px(-20.)), text.len());
+            let wrapped = system
+                .shape_text_in_direction(
+                    text.into(),
+                    px(20.),
+                    &runs,
+                    Some(px(45.)),
+                    None,
+                    LayoutDirection::Rtl,
+                )
+                .unwrap();
+            assert_eq!(
+                wrapped.iter().map(|l| l.text.as_str()).collect::<String>(),
+                text
+            );
+            assert!(wrapped.iter().all(|l| l.len() == l.text.len()));
+        }
+        let text = "English (عربي) 123";
+        let runs = [TextRun {
+            len: text.len(),
+            font: font("Arial"),
+            color: black(),
+            background_color: None,
+            underline: None,
+            strikethrough: None,
+        }];
+        let ltr =
+            system.shape_line_in_direction(text.into(), px(20.), &runs, None, LayoutDirection::Ltr);
+        let rtl =
+            system.shape_line_in_direction(text.into(), px(20.), &runs, None, LayoutDirection::Rtl);
+        assert_ne!(ltr.x_for_index(0), rtl.x_for_index(0));
+        assert_eq!(ltr.len, text.len());
+        assert_eq!(rtl.len, text.len());
+    }
+}
+
+/// CoreText knows ligature carets and mark advances; use those instead of glyph ink origins.
+pub(crate) fn bidi_geometry(
+    text: &str,
+    line: &core_text::line::CTLine,
+) -> Option<std::sync::Arc<gpui::BidiGeometry>> {
+    use core_foundation::base::TCFType;
+    unsafe extern "C" {
+        fn CTLineGetOffsetForStringIndex(
+            line: core_text::line::CTLineRef,
+            index: isize,
+            secondary: *mut f64,
+        ) -> f64;
+    }
+    gpui::BidiGeometry::from_native(text, |index| {
+        let utf16 = text[..index].encode_utf16().count();
+        let mut secondary = 0.0;
+        let primary = unsafe {
+            CTLineGetOffsetForStringIndex(
+                line.as_concrete_TypeRef(),
+                utf16 as isize,
+                &mut secondary,
+            )
+        };
+        (gpui::px(primary as f32), gpui::px(secondary as f32))
+    })
+}
+
+/// Native shaping for regression harnesses without creating an AppKit application.
+#[cfg(feature = "test-support")]
+pub fn text_system_for_tests() -> std::sync::Arc<dyn gpui::PlatformTextSystem> {
+    std::sync::Arc::new(crate::MacTextSystem::new())
+}

@@ -180,6 +180,7 @@ struct ScrollAxisState {
 }
 
 pub struct X11ClientState {
+    pub(crate) fast_touches: crate::fast::x11_touch::TouchState,
     /// A weak pointer to this state, for event-loop callbacks registered by its methods.
     this: X11ClientStatePtr,
     pub(crate) loop_handle: LoopHandle<'static, ()>,
@@ -255,6 +256,7 @@ impl X11ClientStatePtr {
         };
         let mut state = client.0.borrow_mut();
 
+        crate::fast::x11_touch::TouchState::forget_window(&mut state.fast_touches, x_window);
         if let Some(window_ref) = state.windows.remove(&x_window)
             && let Some(RefreshState::PeriodicRefresh {
                 event_loop_token, ..
@@ -397,6 +399,11 @@ impl X11Connection {
         anyhow::ensure!(
             xinput_version.major_version >= 2,
             "XInput version >= 2 required."
+        );
+        let fast_touches = crate::fast::x11_touch::TouchState::new(
+            xinput_version.major_version,
+            xinput_version.minor_version,
+            &xcb_connection,
         );
         let supports_xinput_gestures = xinput_version.major_version > 2
             || (xinput_version.major_version == 2 && xinput_version.minor_version >= 4);
@@ -547,6 +554,7 @@ impl X11Connection {
                 cursor_hidden_window: None,
                 invisible_cursor_cache: None,
 
+                fast_touches,
                 pointer_device_states,
 
                 supports_xinput_gestures,
@@ -881,6 +889,9 @@ impl X11Client {
     }
 
     fn handle_event(&self, event: Event) -> Option<()> {
+        if crate::fast::x11_touch::handle_event(self, &event) {
+            return Some(());
+        }
         match event {
             Event::UnmapNotify(event) => {
                 let mut state = self.0.borrow_mut();

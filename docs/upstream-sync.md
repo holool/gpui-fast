@@ -211,3 +211,15 @@ commit our copy was taken from is `zed_commit` in `UPSTREAM`, and
    and the new vendor commit, and add or remove entries under `tracked` if zed
    added or removed crates we use.
 5. Run `script/check-upstream`, the tests and clippy.
+
+## Holool direction extension
+
+The Holool fork intentionally extends public API for the user's RTL work:
+`LayoutDirection`, `Directional`, logical style refinements, native bidi
+geometry, directional shaping, visual caret/selection geometry, and the macOS
+test-support text-system factory. New algorithms and tests remain under `fast/`;
+upstream files carry fields, constructor defaults, visibility access, and
+forwarding hooks. See [holool-rtl.md](holool-rtl.md) for compatibility and QA
+limits. Keep these APIs when syncing upstream rather than silently reverting to
+LTR geometry. The small `WrappedLine.fast_soft_wrap` flag preserves source byte
+offsets when bidi shaping returns independently shaped visual rows.

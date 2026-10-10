@@ -924,6 +924,9 @@ pub(crate) fn request_layout(
     style: &Style,
     children: &[LayoutId],
 ) -> LayoutId {
+    let resolved_style = crate::fast::direction::needs_resolution(style, window)
+        .then(|| crate::fast::direction::inherit_style(style.clone(), window));
+    let style = resolved_style.as_ref().unwrap_or(style);
     window.invalidator.debug_assert_prepaint();
     let rem_size = window.rem_size();
     let scale_factor = window.scale_factor();
@@ -1333,6 +1336,7 @@ fn layout_fingerprint(style: &Style, rem_size: Pixels, scale_factor: f32) -> u64
 
     let mut hasher = FxHasher::default();
     let hasher = &mut hasher;
+    mem::discriminant(&crate::fast::direction::taffy_direction(style)).hash(hasher);
     rem_size.0.to_bits().hash(hasher);
     scale_factor.to_bits().hash(hasher);
 
