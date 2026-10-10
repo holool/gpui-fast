@@ -95,6 +95,7 @@ fn text_style_stack_aligns_as_it_resolves() {
 
 fn line(len: usize) -> LineLayout {
     LineLayout {
+        fast_bidi: Default::default(),
         font_size: px(14.),
         width: px(len as f32 * 7.),
         ascent: px(10.),

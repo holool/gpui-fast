@@ -658,6 +658,7 @@ impl CosmicTextSystemState {
         let segment =
             self.layout_line_no_separators(&text[range.clone()], font_size, &segment_font_runs);
 
+        crate::fast::text::segment_geometry(layout, &segment, range.start, range.end);
         let mut segment_runs = segment.runs;
         for run in &mut segment_runs {
             for glyph in &mut run.glyphs {
@@ -760,6 +761,7 @@ impl CosmicTextSystemState {
 
         let Some(layout) = layout_lines.first() else {
             return LineLayout {
+                fast_bidi: Default::default(),
                 font_size,
                 width: Pixels::ZERO,
                 ascent: Pixels::ZERO,
@@ -832,6 +834,7 @@ impl CosmicTextSystemState {
         }
 
         LineLayout {
+            fast_bidi: crate::fast::text::bidi_geometry(text, &layout.glyphs),
             font_size,
             width: layout.w.into(),
             ascent: layout.max_ascent.into(),

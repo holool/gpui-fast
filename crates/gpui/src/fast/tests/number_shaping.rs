@@ -120,6 +120,7 @@ impl PlatformTextSystem for Shaper {
             ix += 1;
         }
         LineLayout {
+            fast_bidi: Default::default(),
             font_size,
             width: px(x as f32),
             ascent: px(9.),

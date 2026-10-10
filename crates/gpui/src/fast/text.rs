@@ -135,6 +135,7 @@ impl TextMeasureInputs {
         if !(self.text == other.text
             && self.font_size == other.font_size
             && self.line_height == other.line_height
+            && style.fast_direction == other_style.fast_direction
             && style.white_space == other_style.white_space
             && style.line_clamp == other_style.line_clamp
             && style.text_overflow == other_style.text_overflow
@@ -368,11 +369,21 @@ fn measure_text(
     };
     let len = text.len();
 
-    let Some(lines) = window
-        .text_system()
-        .shape_text(text, font_size, &runs, wrap_width, text_style.line_clamp)
-        .log_err()
-    else {
+    let shaped = if text_style.fast_direction.is_rtl() || crate::fast::bidi::has_rtl(&text) {
+        window.text_system().shape_text_in_direction(
+            text,
+            font_size,
+            &runs,
+            wrap_width,
+            text_style.line_clamp,
+            text_style.fast_direction,
+        )
+    } else {
+        window
+            .text_system()
+            .shape_text(text, font_size, &runs, wrap_width, text_style.line_clamp)
+    };
+    let Some(lines) = shaped.log_err() else {
         layout.0.borrow_mut().replace(TextLayoutInner {
             lines: Default::default(),
             len: 0,
@@ -479,6 +490,7 @@ fn copy_measurement(inner: &TextLayoutInner) -> TextLayoutInner {
             .lines
             .iter()
             .map(|line| WrappedLine {
+                fast_soft_wrap: line.fast_soft_wrap,
                 layout: line.layout.clone(),
                 text: line.text.clone(),
                 decoration_runs: line.decoration_runs.clone(),
@@ -669,7 +681,10 @@ impl LineShaping {
         if let Some(layout) = self.recent.lock().get(hash, text, font_size, runs) {
             return layout;
         }
-        let layout = self.shape_line_uncached(platform_text_system, text, font_size, runs);
+        let mut layout = self.shape_line_uncached(platform_text_system, text, font_size, runs);
+        if layout.fast_bidi.is_none() {
+            layout.fast_bidi = crate::fast::bidi::BidiGeometry::build(text, &layout);
+        }
         self.recent
             .lock()
             .insert(hash, text, font_size, runs, copy_layout(&layout));
@@ -842,6 +857,7 @@ impl RecentShapes {
 fn copy_layout(layout: &LineLayout) -> LineLayout {
     // Destructured, so that a field upstream adds can't be missed here.
     let LineLayout {
+        fast_bidi,
         font_size,
         width,
         ascent,
@@ -850,6 +866,7 @@ fn copy_layout(layout: &LineLayout) -> LineLayout {
         len,
     } = layout;
     LineLayout {
+        fast_bidi: fast_bidi.clone(),
         font_size: *font_size,
         width: *width,
         ascent: *ascent,

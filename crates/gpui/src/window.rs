@@ -5159,6 +5159,7 @@ impl Window {
     ) -> LayoutId {
         self.invalidator.debug_assert_prepaint();
 
+        let style = crate::fast::direction::inherit_style(style, self);
         cx.layout_id_buffer.clear();
         cx.layout_id_buffer.extend(children);
         let rem_size = self.rem_size();
@@ -5188,6 +5189,7 @@ impl Window {
             + 'static,
     {
         self.invalidator.debug_assert_prepaint();
+        let style = crate::fast::direction::inherit_style(style, self);
 
         let rem_size = self.rem_size();
         let scale_factor = self.scale_factor();

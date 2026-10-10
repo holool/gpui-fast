@@ -14,8 +14,10 @@
 //! comes from. The few items that are public API are exported from the crate
 //! root one by one, in `gpui.rs`.
 
+pub(crate) mod bidi;
 pub(crate) mod composition;
 pub(crate) mod dependencies;
+pub(crate) mod direction;
 pub(crate) mod dispatch;
 pub(crate) mod global_id;
 pub(crate) mod glyphs;

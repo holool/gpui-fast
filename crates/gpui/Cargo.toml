@@ -55,6 +55,9 @@ stacker = ["dep:stacksafe"]
 path = "src/gpui.rs"
 
 [dependencies]
+unicode-bidi = "0.3.18"
+unicode-linebreak = "0.1.5"
+unicode-segmentation.workspace = true
 accesskit.workspace = true
 anyhow.workspace = true
 async-task.workspace = true

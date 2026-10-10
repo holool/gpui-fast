@@ -94,6 +94,7 @@ impl ShapedLine {
     pub fn with_len(mut self, len: usize) -> Self {
         let layout = self.layout.as_ref();
         self.layout = Arc::new(LineLayout {
+            fast_bidi: Default::default(),
             font_size: layout.font_size,
             width: layout.width,
             ascent: layout.ascent,
@@ -361,6 +362,7 @@ impl<'a> ShapedLineCursor<'a> {
         self.x_offset = next_x;
         ShapedLine {
             layout: Arc::new(LineLayout {
+                fast_bidi: Default::default(),
                 font_size: self.line.layout.font_size,
                 width: next_x - previous_x,
                 ascent: self.line.layout.ascent,
@@ -441,6 +443,7 @@ impl LineLayout {
 /// A line of text that has been shaped, decorated, and wrapped by the text layout system.
 #[derive(Default, Debug, Deref, DerefMut)]
 pub struct WrappedLine {
+    pub(crate) fast_soft_wrap: bool,
     #[deref]
     #[deref_mut]
     pub(crate) layout: Arc<WrappedLineLayout>,
@@ -536,6 +539,13 @@ fn paint_line(
         &mut Window,
     ),
 ) -> Result<()> {
+    if crate::fast::bidi::has_geometry(layout) && wrap_boundaries.is_empty() {
+        return crate::fast::bidi::paint(
+            layout,
+            (origin, line_height, align, align_width),
+            (decoration_runs, window, paint_underline),
+        );
+    }
     let line_bounds = line_paint_bounds(
         origin,
         layout,
@@ -807,6 +817,13 @@ fn paint_line_background(
     window: &mut Window,
     cx: &mut App,
 ) -> Result<()> {
+    if crate::fast::bidi::has_geometry(layout) && wrap_boundaries.is_empty() {
+        return crate::fast::bidi::backgrounds(
+            layout,
+            (origin, line_height, align, align_width),
+            (decoration_runs, window),
+        );
+    }
     if crate::fast::glyphs::has_no_background(decoration_runs) {
         return Ok(());
     }
@@ -1046,6 +1063,7 @@ mod tests {
 
         ShapedLine {
             layout: Arc::new(LineLayout {
+                fast_bidi: Default::default(),
                 font_size: px(16.0),
                 width: px(width),
                 ascent: px(12.0),
@@ -1381,6 +1399,7 @@ mod tests {
                 let line_height = px(20.);
                 let y = origin.y + underline_y_offset(line_height, line.ascent, line.descent);
                 let wrapped = WrappedLine {
+                    fast_soft_wrap: false,
                     layout: Arc::new(WrappedLineLayout {
                         unwrapped_layout: line.layout,
                         wrap_boundaries: SmallVec::from_buf([WrapBoundary {
@@ -1492,6 +1511,7 @@ mod tests {
         // Successive splits simulate the incremental splitting done during wrap.
         let line = ShapedLine {
             layout: Arc::new(LineLayout {
+                fast_bidi: Default::default(),
                 font_size: px(16.0),
                 width: px(60.0),
                 ascent: px(12.0),
@@ -1711,6 +1731,7 @@ mod tests {
             width += advance;
         }
         line.layout = Arc::new(LineLayout {
+            fast_bidi: Default::default(),
             font_size: layout.font_size,
             width,
             ascent: layout.ascent,
@@ -1738,6 +1759,7 @@ mod tests {
     fn test_cursor_preserves_shaping_metadata_across_runs() {
         let line = ShapedLine {
             layout: Arc::new(LineLayout {
+                fast_bidi: Default::default(),
                 font_size: px(16.0),
                 width: px(50.0),
                 ascent: px(12.0),

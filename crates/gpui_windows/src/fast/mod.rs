@@ -12,3 +12,5 @@ pub(crate) mod draw_state;
 pub(crate) mod frame;
 pub(crate) mod globals;
 pub(crate) mod layers;
+
+pub(crate) mod text;

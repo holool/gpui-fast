@@ -734,7 +734,7 @@ impl TextLayout {
             let line_bottom = line_origin.y + line.size(line_height).height;
             if position.y > line_bottom {
                 line_origin.y = line_bottom;
-                line_start_ix += line.len() + 1;
+                line_start_ix += crate::fast::bidi::line_advance(line);
             } else {
                 let position_within_line = position - line_origin;
                 match line.index_for_position(position_within_line, line_height) {
@@ -765,9 +765,9 @@ impl TextLayout {
             let line_end_ix = line_start_ix + line.len();
             if index < line_start_ix {
                 break;
-            } else if index > line_end_ix {
+            } else if index > line_end_ix || (index == line_end_ix && line.fast_soft_wrap) {
                 line_origin.y += line.size(line_height).height;
-                line_start_ix = line_end_ix + 1;
+                line_start_ix += crate::fast::bidi::line_advance(line);
                 continue;
             } else {
                 let ix_within_line = index - line_start_ix;
@@ -791,7 +791,7 @@ impl TextLayout {
             if index < line_start_ix {
                 break;
             } else if index > line_end_ix {
-                line_start_ix = line_end_ix + 1;
+                line_start_ix += crate::fast::bidi::line_advance(line);
                 continue;
             } else {
                 return Some(line.layout.clone());

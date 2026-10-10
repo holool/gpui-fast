@@ -722,6 +722,7 @@ impl X11WindowState {
                 | xinput::XIEventMask::BUTTON_RELEASE
                 | xinput::XIEventMask::ENTER
                 | xinput::XIEventMask::LEAVE;
+            xi_event_mask = crate::fast::x11_touch::mask(&client, xi_event_mask);
             if supports_xinput_gestures {
                 // x11rb 0.13 doesn't define XIEventMask constants for gesture
                 // events, so we construct them from the event opcodes (each

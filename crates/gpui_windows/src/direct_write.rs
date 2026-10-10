@@ -634,6 +634,7 @@ impl DirectWriteState {
             let width = px(renderer_context.width);
 
             Ok(LineLayout {
+                fast_bidi: crate::fast::text::bidi_geometry(text, &text_layout),
                 font_size,
                 width,
                 ascent,
@@ -1409,6 +1410,7 @@ struct RendererContext<'t, 'a, 'b> {
     width: f32,
 }
 
+#[cfg(test)] // fast::text owns production cluster iteration.
 #[derive(Debug)]
 struct ClusterAnalyzer<'t> {
     utf16_idx: usize,
@@ -1417,6 +1419,7 @@ struct ClusterAnalyzer<'t> {
     cluster_map: &'t [u16],
 }
 
+#[cfg(test)] // fast::text owns production cluster iteration.
 impl<'t> ClusterAnalyzer<'t> {
     fn new(cluster_map: &'t [u16], glyph_count: usize) -> Self {
         ClusterAnalyzer {
@@ -1428,6 +1431,7 @@ impl<'t> ClusterAnalyzer<'t> {
     }
 }
 
+#[cfg(test)] // fast::text owns production cluster iteration.
 impl Iterator for ClusterAnalyzer<'_> {
     type Item = (usize, usize);
 
@@ -1590,13 +1594,21 @@ impl IDWriteTextRenderer_Impl for TextRenderer_Impl {
             )?
         };
 
-        let cluster_analyzer = ClusterAnalyzer::new(cluster_map, glyph_count);
-        let mut utf16_idx = desc.textPosition as usize;
-        let mut glyph_idx = 0;
+        let fast_clusters = crate::fast::text::clusters(cluster_map, glyph_count);
+        let fast_positions = crate::fast::text::glyph_positions(
+            _baselineoriginx,
+            glyph_advances,
+            glyph_offsets,
+            glyphrun.bidiLevel,
+        );
         let mut glyphs = Vec::with_capacity(glyph_count);
-        for (cluster_utf16_len, cluster_glyph_count) in cluster_analyzer {
-            context.index_converter.advance_to_utf16_ix(utf16_idx);
-            utf16_idx += cluster_utf16_len;
+        for (fast_text, fast_glyphs) in fast_clusters {
+            crate::fast::text::reset_converter(&mut context.index_converter);
+            context
+                .index_converter
+                .advance_to_utf16_ix(desc.textPosition as usize + fast_text.start);
+            let glyph_idx = fast_glyphs.start;
+            let cluster_glyph_count = fast_glyphs.end - fast_glyphs.start;
             for (cluster_glyph_idx, glyph_id) in glyph_ids
                 [glyph_idx..(glyph_idx + cluster_glyph_count)]
                 .iter()
@@ -1609,7 +1621,7 @@ impl IDWriteTextRenderer_Impl for TextRenderer_Impl {
                 glyphs.push(ShapedGlyph {
                     id,
                     position: point(
-                        px(context.width + glyph_offsets[this_glyph_idx].advanceOffset),
+                        fast_positions[this_glyph_idx],
                         px(-glyph_offsets[this_glyph_idx].ascenderOffset),
                     ),
                     index: context.index_converter.utf8_ix,
@@ -1617,7 +1629,6 @@ impl IDWriteTextRenderer_Impl for TextRenderer_Impl {
                 });
                 context.width += glyph_advances[this_glyph_idx];
             }
-            glyph_idx += cluster_glyph_count;
         }
         context.runs.push(ShapedRun { font_id, glyphs });
         Ok(())
@@ -1691,10 +1702,11 @@ unsafe fn slice_from_nullable<'a, T>(
     }
 }
 
-struct StringIndexConverter<'a> {
-    text: &'a str,
-    utf8_ix: usize,
-    utf16_ix: usize,
+pub(crate) struct StringIndexConverter<'a> {
+    // fast::text resets between visual runs.
+    pub(crate) text: &'a str,
+    pub(crate) utf8_ix: usize,
+    pub(crate) utf16_ix: usize,
 }
 
 impl<'a> StringIndexConverter<'a> {

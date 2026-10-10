@@ -14,3 +14,5 @@ pub(crate) mod frame;
 pub(crate) mod globals;
 pub(crate) mod layers;
 pub(crate) mod pass_state;
+
+pub(crate) mod text;

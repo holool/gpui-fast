@@ -475,6 +475,7 @@ impl ToTaffy<taffy::style::Style> for Style {
         }
 
         taffy::style::Style {
+            direction: crate::fast::direction::taffy_direction(self),
             display: self.display.into(),
             overflow: self.overflow.into(),
             scrollbar_width: self.scrollbar_width.to_taffy(rem_size, scale_factor),
