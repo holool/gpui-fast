@@ -2146,6 +2146,7 @@ pub(crate) struct AriaProperties {
     pub(crate) column_index: Option<usize>,
     pub(crate) row_count: Option<usize>,
     pub(crate) column_count: Option<usize>,
+    pub(crate) fast_states: crate::fast::aria_state::AriaStates,
 }
 
 /// The interactivity struct. Powers all of the general-purpose
@@ -3635,6 +3636,7 @@ impl Interactivity {
         if let Some(count) = self.aria.column_count {
             node.set_column_count(count);
         }
+        crate::fast::aria_state::write(&self.aria.fast_states, node);
         if !self.click_listeners.is_empty() {
             node.add_action(accesskit::Action::Click);
         }
