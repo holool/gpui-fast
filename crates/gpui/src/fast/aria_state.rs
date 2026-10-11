@@ -68,7 +68,7 @@ impl<E: StatefulInteractiveElement> AriaStateExt for E {}
 #[cfg(test)]
 mod tests {
     use super::AriaStateExt;
-    use crate::{InteractiveElement, StatefulInteractiveElement, div};
+    use crate::{InteractiveElement, div};
 
     #[test]
     fn disabled_hidden_and_modal_states_reach_the_accessibility_node() {
