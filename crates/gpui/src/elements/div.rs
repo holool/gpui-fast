@@ -1391,27 +1391,6 @@ pub trait StatefulInteractiveElement: InteractiveElement {
         self
     }
 
-    /// Mark this control as disabled for assistive technologies. It stays
-    /// in the accessibility tree; activation is still the element's to refuse.
-    fn aria_disabled(mut self, disabled: bool) -> Self {
-        self.interactivity().aria.disabled = disabled;
-        self
-    }
-
-    /// Hide this element and its descendants from assistive technologies,
-    /// for content that is laid out but not shown (for example collapsed).
-    fn aria_hidden(mut self) -> Self {
-        self.interactivity().aria.hidden = true;
-        self
-    }
-
-    /// Mark a dialog as modal: assistive technologies treat the content
-    /// outside it as inert while it is open.
-    fn aria_modal(mut self, modal: bool) -> Self {
-        self.interactivity().aria.modal = modal;
-        self
-    }
-
     /// Set the selected state for this element.
     fn aria_selected(mut self, selected: bool) -> Self {
         self.interactivity().aria.selected = Some(selected);
@@ -2167,9 +2146,7 @@ pub(crate) struct AriaProperties {
     pub(crate) column_index: Option<usize>,
     pub(crate) row_count: Option<usize>,
     pub(crate) column_count: Option<usize>,
-    pub(crate) disabled: bool,
-    pub(crate) hidden: bool,
-    pub(crate) modal: bool,
+    pub(crate) fast_states: crate::fast::aria_state::AriaStates,
 }
 
 /// The interactivity struct. Powers all of the general-purpose
@@ -3659,15 +3636,7 @@ impl Interactivity {
         if let Some(count) = self.aria.column_count {
             node.set_column_count(count);
         }
-        if self.aria.disabled {
-            node.set_disabled();
-        }
-        if self.aria.hidden {
-            node.set_hidden();
-        }
-        if self.aria.modal {
-            node.set_modal();
-        }
+        crate::fast::aria_state::write(&self.aria.fast_states, node);
         if !self.click_listeners.is_empty() {
             node.add_action(accesskit::Action::Click);
         }
@@ -5375,25 +5344,6 @@ mod tests {
         assert_eq!(node.min_numeric_value(), Some(6.0));
         assert_eq!(node.max_numeric_value(), Some(72.0));
         assert_eq!(node.numeric_value_step(), Some(1.0));
-    }
-
-    #[test]
-    fn test_write_a11y_info_disabled_hidden_and_modal_states() {
-        let mut element = div()
-            .id("dialog")
-            .aria_disabled(true)
-            .aria_hidden()
-            .aria_modal(true);
-        let mut node = accesskit::Node::new(accesskit::Role::Dialog);
-        element.interactivity().write_a11y_info(&mut node);
-        assert!(node.is_disabled(), "a disabled control must say so");
-        assert!(node.is_hidden(), "hidden content must leave the tree");
-        assert!(node.is_modal(), "a modal dialog must say so");
-
-        let mut plain = accesskit::Node::new(accesskit::Role::Button);
-        let mut element = div().id("plain");
-        element.interactivity().write_a11y_info(&mut plain);
-        assert!(!plain.is_disabled() && !plain.is_hidden() && !plain.is_modal());
     }
 
     /// Two focusable, clickable elements ("a" and "b") used to exercise the

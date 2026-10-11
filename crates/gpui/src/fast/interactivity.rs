@@ -38,9 +38,7 @@ static NO_ARIA: AriaProperties = AriaProperties {
     column_index: None,
     row_count: None,
     column_count: None,
-    disabled: false,
-    hidden: false,
-    modal: false,
+    fast_states: crate::fast::aria_state::AriaStates::NONE,
 };
 
 impl Deref for Aria {

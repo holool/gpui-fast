@@ -112,6 +112,7 @@ pub use debug_overlay::*;
 pub use element::*;
 pub use elements::*;
 pub use executor::*;
+pub use fast::aria_state::AriaStateExt;
 pub use fast::bidi::BidiGeometry;
 pub use fast::composition::{
     ComposedScene, ComposedSceneLayer, CompositionSurfaceId, CompositionSurfaceKind,

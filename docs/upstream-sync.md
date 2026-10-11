@@ -223,3 +223,10 @@ forwarding hooks. See [holool-rtl.md](holool-rtl.md) for compatibility and QA
 limits. Keep these APIs when syncing upstream rather than silently reverting to
 LTR geometry. The small `WrappedLine.fast_soft_wrap` flag preserves source byte
 offsets when bidi shaping returns independently shaped visual rows.
+
+The Holool fork also exports `AriaStateExt` (`fast::aria_state`): the
+disabled, hidden and modal accessibility states the gpui-arabic fork offered
+(`aria_disabled`, `aria_hidden`, `aria_modal` on every stateful element).
+Upstream's `AriaProperties` holds them in one `fast_states` field, and
+`Interactivity::write_a11y_info` writes them through one hook. If upstream
+adds the same states, the sync takes its methods and drops this trait.
