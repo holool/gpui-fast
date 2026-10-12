@@ -388,7 +388,9 @@ impl WrappedLineLayout {
         line_height: Pixels,
         closest: bool,
     ) -> Result<usize, usize> {
-        if let Some(fast_index) = crate::fast::bidi::wrapped_index(self, position, line_height, closest) {
+        if let Some(fast_index) =
+            crate::fast::bidi::wrapped_index(self, position, line_height, closest)
+        {
             return fast_index;
         }
         let wrapped_line_ix = (position.y / line_height) as usize;
