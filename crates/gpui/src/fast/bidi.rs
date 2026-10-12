@@ -632,3 +632,40 @@ pub(crate) fn shape_text_auto(
     }
     Ok(result)
 }
+
+// Independently shaped bidi rows already have physical caret coordinates.
+// Subtracting the logical start caret moves RTL carets outside the row.
+pub(crate) fn wrapped_position(
+    line: &crate::WrappedLineLayout,
+    index: usize,
+) -> Option<Option<crate::Point<Pixels>>> {
+    (line.wrap_boundaries.is_empty() && has_geometry(&line.unwrapped_layout)).then(|| {
+        (index <= line.len())
+            .then(|| crate::point(line.unwrapped_layout.x_for_index(index), crate::px(0.)))
+    })
+}
+
+pub(crate) fn wrapped_index(
+    line: &crate::WrappedLineLayout,
+    position: crate::Point<Pixels>,
+    line_height: Pixels,
+    closest: bool,
+) -> Option<Result<usize, usize>> {
+    ((position.y / line_height) as usize == 0
+        && line.wrap_boundaries.is_empty()
+        && has_geometry(&line.unwrapped_layout))
+    .then(|| {
+        let layout = &line.unwrapped_layout;
+        if closest {
+            Ok(layout.closest_index_for_x(position.x))
+        } else {
+            layout
+                .index_for_x(position.x)
+                .ok_or_else(|| layout.closest_index_for_x(position.x))
+        }
+    })
+}
+
+pub(crate) fn after_row(y: Pixels, bottom: Pixels) -> bool {
+    y >= bottom
+}

@@ -388,6 +388,9 @@ impl WrappedLineLayout {
         line_height: Pixels,
         closest: bool,
     ) -> Result<usize, usize> {
+        if let Some(fast_index) = crate::fast::bidi::wrapped_index(self, position, line_height, closest) {
+            return fast_index;
+        }
         let wrapped_line_ix = (position.y / line_height) as usize;
 
         let wrapped_line_start_index;
@@ -442,6 +445,9 @@ impl WrappedLineLayout {
 
     /// Returns the pixel position for the given byte index.
     pub fn position_for_index(&self, index: usize, line_height: Pixels) -> Option<Point<Pixels>> {
+        if let Some(fast_position) = crate::fast::bidi::wrapped_position(self, index) {
+            return fast_position;
+        }
         let mut line_start_ix = 0;
         let mut line_end_indices = self
             .wrap_boundaries
