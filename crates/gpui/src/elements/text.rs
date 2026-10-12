@@ -732,7 +732,7 @@ impl TextLayout {
         let mut line_start_ix = 0;
         for line in &element_state.lines {
             let line_bottom = line_origin.y + line.size(line_height).height;
-            if position.y > line_bottom {
+            if crate::fast::bidi::after_row(position.y, line_bottom) {
                 line_origin.y = line_bottom;
                 line_start_ix += crate::fast::bidi::line_advance(line);
             } else {

@@ -138,3 +138,40 @@ fn cached_views_follow_direction_changes_and_resolve_logical_padding() {
         "direction changes invalidate a retained view's context"
     );
 }
+
+#[test]
+fn independently_shaped_rtl_row_carets_round_trip_at_both_edges() {
+    let wrapped = crate::WrappedLineLayout {
+        unwrapped_layout: std::sync::Arc::new(shaped("علي", &[4, 2, 0])),
+        ..Default::default()
+    };
+    for (index, x) in [(0, 30.), (2, 20.), (4, 10.), (6, 0.)] {
+        let caret = wrapped.position_for_index(index, px(20.)).unwrap();
+        assert_eq!(
+            caret,
+            point(px(x), px(0.)),
+            "RTL caret must stay on the physical row"
+        );
+        assert_eq!(
+            wrapped
+                .index_for_position(caret, px(20.))
+                .unwrap_or_else(|ix| ix),
+            index
+        );
+        assert_eq!(
+            wrapped.closest_index_for_position(caret, px(20.)).unwrap(),
+            index
+        );
+    }
+    assert_eq!(wrapped.position_for_index(7, px(20.)), None);
+}
+
+#[test]
+fn text_row_top_belongs_to_the_next_row() {
+    assert!(!crate::fast::bidi::after_row(px(19.5), px(20.)));
+    assert!(
+        crate::fast::bidi::after_row(px(20.), px(20.)),
+        "the shared edge must resolve to the following row, matching position_for_index"
+    );
+    assert!(crate::fast::bidi::after_row(px(20.5), px(20.)));
+}
