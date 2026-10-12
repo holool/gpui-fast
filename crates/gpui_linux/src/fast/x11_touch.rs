@@ -186,7 +186,7 @@ mod tests {
     }
 }
 
-use crate::linux::{X11Client, X11ClientStatePtr};
+use crate::linux::X11Client;
 use std::collections::HashSet;
 use x11rb::{
     connection::Connection,
@@ -210,6 +210,10 @@ impl TouchState {
         };
         state.refresh(connection);
         state
+    }
+    /// Whether the server's XInput takes touch events (2.2 or later).
+    pub(crate) fn enabled(&self) -> bool {
+        self.enabled
     }
     fn refresh(&mut self, connection: &impl Connection) {
         if !self.enabled {
@@ -237,11 +241,12 @@ impl TouchState {
         self.contacts.cancel_window(window);
     }
 }
-pub(crate) fn mask(client: &X11ClientStatePtr, mask: xinput::XIEventMask) -> xinput::XIEventMask {
-    if client
-        .get_client()
-        .is_some_and(|c| c.0.borrow().fast_touches.enabled)
-    {
+/// The window's XInput mask, with the touch events when touches are on.
+/// The caller reads `enabled` before it makes the window: `open_window` holds
+/// the client state mutably borrowed while the window is built, so borrowing
+/// it here panicked on every X11 window open.
+pub(crate) fn mask(enabled: bool, mask: xinput::XIEventMask) -> xinput::XIEventMask {
+    if enabled {
         mask | xinput::XIEventMask::TOUCH_BEGIN
             | xinput::XIEventMask::TOUCH_UPDATE
             | xinput::XIEventMask::TOUCH_END

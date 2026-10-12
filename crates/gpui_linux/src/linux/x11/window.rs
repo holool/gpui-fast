@@ -473,6 +473,7 @@ impl X11WindowState {
         appearance: WindowAppearance,
         parent_window: Option<X11WindowStatePtr>,
         supports_xinput_gestures: bool,
+        fast_touch_enabled: bool,
         is_bgr: bool,
     ) -> anyhow::Result<Self> {
         // Native popups are not implemented on X11 yet. Rejecting lets callers fall back to
@@ -722,7 +723,7 @@ impl X11WindowState {
                 | xinput::XIEventMask::BUTTON_RELEASE
                 | xinput::XIEventMask::ENTER
                 | xinput::XIEventMask::LEAVE;
-            xi_event_mask = crate::fast::x11_touch::mask(&client, xi_event_mask);
+            xi_event_mask = crate::fast::x11_touch::mask(fast_touch_enabled, xi_event_mask);
             if supports_xinput_gestures {
                 // x11rb 0.13 doesn't define XIEventMask constants for gesture
                 // events, so we construct them from the event opcodes (each
@@ -943,6 +944,7 @@ impl X11Window {
         appearance: WindowAppearance,
         parent_window: Option<X11WindowStatePtr>,
         supports_xinput_gestures: bool,
+        fast_touch_enabled: bool,
         is_bgr: bool,
     ) -> anyhow::Result<Self> {
         let ptr = X11WindowStatePtr {
@@ -962,6 +964,7 @@ impl X11Window {
                 appearance,
                 parent_window,
                 supports_xinput_gestures,
+                fast_touch_enabled,
                 is_bgr,
             )?)),
             callbacks: Rc::new(RefCell::new(Callbacks::default())),

@@ -1717,6 +1717,7 @@ impl X11Client {
         let appearance = state.common.borrow().appearance;
         let compositor_gpu = state.compositor_gpu.take();
         let supports_xinput_gestures = state.supports_xinput_gestures;
+        let fast_touch_enabled = crate::fast::x11_touch::TouchState::enabled(&state.fast_touches);
         let is_bgr = state
             .resource_database
             .get_string("Xft.rgba", "Xft.Rgba")
@@ -1737,6 +1738,7 @@ impl X11Client {
             appearance,
             parent_window,
             supports_xinput_gestures,
+            fast_touch_enabled,
             is_bgr,
         )?;
         check_reply(
