@@ -55,3 +55,21 @@ Full CSS `direction:auto` layout inference and caret affinity at the two visual
 positions of a mixed-direction boundary are not introduced by this patch.
 Native Windows rendering and physical touchscreen gestures still require device
 QA; unit tests and cross-compilation do not replace that check.
+
+## October 2026 upstream sync
+
+The sync through longbridge/gpui-fast `eeccb27f7b7b437e0d99277af2b696e6c71fb6ef`
+retains Holool's inherited direction, logical edges, bidi caret/selection geometry,
+independently shaped wrapped rows, accessibility state extensions, and X11 touch
+contacts (including the window-open borrow fix). It includes upstream's Zed
+`93d7456688` import and the `gpui-pre` 0.3.9 compatibility snapshot.
+
+CoreText now lives in `gpui_apple`. Native bidi geometry and Arabic regression
+coverage moved with it; `gpui_macos::text_system_for_tests` remains available to
+existing Kit tests as a forwarding helper.
+
+Upstream's unconstrained text-measurement cache guard must also check
+`WrappedLine.fast_soft_wrap`: independently shaped bidi rows have no internal
+wrap boundaries. Without that check, a narrow Arabic measurement incorrectly
+answers a later MaxContent/MinContent probe. The upstream regression now runs
+with Latin, Arabic, and mixed text, and reproduced that failure before the fix.

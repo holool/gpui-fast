@@ -47,7 +47,7 @@ jobs:
 
       - name: Test native Arabic shaping
         if: runner.os == 'macOS'
-        run: cargo test -p gpui_macos --lib --features font-kit,runtime_shaders native_arabic
+        run: cargo test -p gpui_apple --lib --features font-kit,runtime_shaders native_arabic
 
       - name: Test X11 contacts
         if: runner.os == 'Linux'

@@ -8,5 +8,6 @@
 //! tests — is written here, one file per topic.
 
 pub(crate) mod composition;
-#[cfg(feature = "font-kit")]
+
+#[cfg(all(feature = "font-kit", feature = "test-support"))]
 pub(crate) mod text_system;
