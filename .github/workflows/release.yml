@@ -104,11 +104,13 @@ jobs:
       - name: Validate package contents and release order
         run: bun script/publish-release.ts
 
+      # Holool's Git-only RTL extensions are absent from the upstream registry crates.
       - name: Rehearse publication without uploading
+        if: github.repository == 'longbridge/gpui-fast'
         run: bun script/publish-release.ts --dry-run
 
       - name: Upload rehearsed crate archives
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && github.repository == 'longbridge/gpui-fast'
         uses: actions/upload-artifact@v4
         with:
           name: release-crates
@@ -136,8 +138,9 @@ jobs:
     name: Publish to crates.io
     needs: validate
     if: >-
-      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
-      (github.event_name == 'workflow_dispatch' && !inputs.dry_run)
+      github.repository == 'longbridge/gpui-fast' &&
+      ((github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
+      (github.event_name == 'workflow_dispatch' && !inputs.dry_run))
     runs-on: ubuntu-latest
     concurrency:
       group: crates-io-publish
