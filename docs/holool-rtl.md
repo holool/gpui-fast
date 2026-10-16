@@ -73,3 +73,11 @@ Upstream's unconstrained text-measurement cache guard must also check
 wrap boundaries. Without that check, a narrow Arabic measurement incorrectly
 answers a later MaxContent/MinContent probe. The upstream regression now runs
 with Latin, Arabic, and mixed text, and reproduced that failure before the fix.
+
+Holool consumes these extensions through Git revisions. The upstream crates.io
+publication rehearsal resolves the official published core, which lacks
+Holool's bidi fields and APIs, so that rehearsal and publication run only in
+`longbridge/gpui-fast`. Fork CI still checks prepared release workspaces,
+all-feature/backend compilation, web compilation, package contents, release
+order, and the normal native test matrix. It does not claim that Holool's code
+can be published under upstream's crate names and versions.
