@@ -43,3 +43,12 @@ mixed-direction caret/selection, clipboard, safe areas, rotation, surface
 recreation, background/foreground recovery, VoiceOver/TalkBack and sustained
 rendering require target-device acceptance. See each backend's validation record
 for checks actually performed; do not infer a device result from desktop tests.
+
+## Android Vulkan debug labels
+
+The Android emulator's Goldfish Vulkan driver crashed in
+`vk_common_SetDebugUtilsObjectNameEXT` when WGPU assigned debug object names.
+The private `fast::mobile::instance_flags` hook removes `InstanceFlags::DEBUG`
+on Android and retains the other default flags, including validation in debug
+builds. Both initial instance creation and GPU recovery use the same hook.
+Other native platforms keep WGPU's default flags.
