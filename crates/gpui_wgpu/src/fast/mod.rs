@@ -15,6 +15,5 @@ pub(crate) mod globals;
 pub(crate) mod layers;
 pub(crate) mod pass_state;
 
-#[cfg(not(target_family = "wasm"))]
 pub(crate) mod mobile;
 pub(crate) mod text;

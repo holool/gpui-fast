@@ -444,9 +444,7 @@ impl WgpuContext {
                 .using_alignment(adapter.limits())
         };
         #[cfg(not(target_family = "wasm"))]
-        let required_limits = wgpu::Limits::downlevel_defaults()
-            .using_resolution(adapter.limits())
-            .using_alignment(adapter.limits());
+        let required_limits = crate::fast::mobile::required_limits(adapter);
 
         let (device, queue) = adapter
             .request_device(&wgpu::DeviceDescriptor {
@@ -470,13 +468,7 @@ impl WgpuContext {
 
     #[cfg(not(target_family = "wasm"))]
     pub fn instance(display: Option<Box<dyn wgpu::wgt::WgpuHasDisplayHandle>>) -> wgpu::Instance {
-        wgpu::Instance::new(wgpu::InstanceDescriptor {
-            backends: wgpu::Backends::VULKAN | wgpu::Backends::GL,
-            flags: crate::fast::mobile::instance_flags(),
-            backend_options: wgpu::BackendOptions::default(),
-            memory_budget_thresholds: wgpu::MemoryBudgetThresholds::default(),
-            display,
-        })
+        crate::fast::mobile::instance(display)
     }
 
     pub fn check_compatible_with_surface(&self, surface: &wgpu::Surface<'_>) -> anyhow::Result<()> {
@@ -685,10 +677,11 @@ impl WgpuContext {
         let required_usages = wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST;
         let bgra_features = adapter.get_texture_format_features(wgpu::TextureFormat::Bgra8Unorm);
         let rgba_features = adapter.get_texture_format_features(wgpu::TextureFormat::Rgba8Unorm);
-        #[cfg(target_family = "wasm")]
-        if adapter.get_info().backend == wgpu::Backend::Gl
-            && rgba_features.allowed_usages.contains(required_usages)
-        {
+        if crate::fast::mobile::prefer_rgba_atlas(
+            adapter,
+            rgba_features.allowed_usages,
+            required_usages,
+        ) {
             return Ok(wgpu::TextureFormat::Rgba8Unorm);
         }
         if bgra_features.allowed_usages.contains(required_usages) {
@@ -724,7 +717,7 @@ impl WgpuContext {
     }
 
     pub fn uses_webgl_instance_data(&self) -> bool {
-        matches!(self.backend, WgpuBackend::Gl) && cfg!(target_family = "wasm")
+        crate::fast::mobile::uses_texture_instance_data(self.backend)
     }
 
     pub fn supports_dual_source_blending(&self) -> bool {
