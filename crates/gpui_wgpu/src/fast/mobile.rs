@@ -13,14 +13,36 @@ pub(crate) fn instance(
     #[cfg(target_os = "android")]
     {
         let instance = create_instance(wgpu::Backends::VULKAN, Some(Box::new(AndroidDisplay)));
-        if !gpui::block_on(instance.enumerate_adapters(wgpu::Backends::VULKAN)).is_empty() {
+        let adapters = gpui::block_on(instance.enumerate_adapters(wgpu::Backends::VULKAN));
+        if adapters.iter().any(|adapter| {
+            let info = adapter.get_info();
+            if emulator_vulkan_driver(&info.name, &info.driver, &info.driver_info) {
+                // Goldfish/ranchu can create a device but lose it on atlas creation.
+                // Keep physical Vulkan devices on the native path; use GLES in AVDs.
+                log::warn!(
+                    "Using GLES for unstable Android emulator Vulkan driver: {}",
+                    info.name
+                );
+                false
+            } else {
+                true
+            }
+        }) {
             return instance;
         }
-        log::info!("Android Vulkan unavailable; creating a GLES-only native instance");
+        log::info!("Android Vulkan unavailable or excluded; creating a GLES-only native instance");
         create_instance(wgpu::Backends::GL, display)
     }
     #[cfg(not(target_os = "android"))]
     create_instance(wgpu::Backends::VULKAN | wgpu::Backends::GL, display)
+}
+
+#[cfg(any(target_os = "android", test))]
+fn emulator_vulkan_driver(name: &str, driver: &str, driver_info: &str) -> bool {
+    [name, driver, driver_info].iter().any(|value| {
+        let value = value.to_ascii_lowercase();
+        value.contains("goldfish") || value.contains("ranchu")
+    })
 }
 
 #[cfg(not(target_family = "wasm"))]
@@ -118,7 +140,7 @@ pub(crate) fn prefer_rgba_atlas(
 
 #[cfg(all(test, not(target_family = "wasm")))]
 mod tests {
-    use super::{limits_for_backend, texture_instance_data};
+    use super::{emulator_vulkan_driver, limits_for_backend, texture_instance_data};
     use crate::WgpuBackend;
 
     #[test]
@@ -158,5 +180,20 @@ mod tests {
             WgpuBackend::Native(wgpu::Backend::Gl),
             false
         ));
+    }
+    #[test]
+    fn only_known_android_emulator_vulkan_identities_are_excluded() {
+        assert!(emulator_vulkan_driver(
+            "Goldfish GFXStream (Apple M4 Max)",
+            "",
+            ""
+        ));
+        assert!(emulator_vulkan_driver("Android GPU", "ranchu", "1.3"));
+        assert!(!emulator_vulkan_driver(
+            "Adreno (TM) 750",
+            "Qualcomm",
+            "Vulkan 1.3"
+        ));
+        assert!(!emulator_vulkan_driver("Mali-G715", "Mali", "Vulkan 1.3"));
     }
 }

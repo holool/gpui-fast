@@ -41,3 +41,15 @@ jobs:
           key: mobile-aarch64-linux-android
       - name: Check core and shared Arabic text/WGPU renderer
         run: cargo check -p gpui_wgpu --target aarch64-linux-android --locked
+
+  web:
+    name: Shared WGPU browser compatibility
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup target add wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: mobile-wasm32-unknown-unknown
+      - name: Check shared helpers preserve WebGPU and WebGL builds
+        run: cargo check -p gpui_wgpu --target wasm32-unknown-unknown --no-default-features --locked
