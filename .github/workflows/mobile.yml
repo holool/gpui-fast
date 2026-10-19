@@ -1,0 +1,43 @@
+name: Mobile foundations
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: mobile-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_INCREMENTAL: 0
+  CARGO_PROFILE_DEV_DEBUG: 0
+
+jobs:
+  ios:
+    name: Apple renderer (${{ matrix.target }})
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [aarch64-apple-ios, aarch64-apple-ios-sim]
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup target add ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: mobile-${{ matrix.target }}
+      - name: Check core and shared Arabic text/Metal renderer
+        run: cargo check -p gpui_apple --target ${{ matrix.target }} --features font-kit,runtime_shaders --locked
+
+  android:
+    name: Android renderer (arm64)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup target add aarch64-linux-android
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: mobile-aarch64-linux-android
+      - name: Check core and shared Arabic text/WGPU renderer
+        run: cargo check -p gpui_wgpu --target aarch64-linux-android --locked
