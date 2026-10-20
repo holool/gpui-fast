@@ -268,6 +268,8 @@ impl crate::WindowTextSystem {
         force_width: Option<Pixels>,
         direction: crate::LayoutDirection,
     ) -> crate::ShapedLine {
+        // Check the source before inserting a direction marker: an empty source
+        // can have no font runs, so shaping marker-only text violates coverage.
         if text.is_empty() || (!direction.is_rtl() && !has_rtl(&text)) {
             return self.shape_line(text, font_size, runs, force_width);
         }
@@ -589,6 +591,19 @@ pub(crate) fn split(layout: &LineLayout, index: usize) -> (LineLayout, LineLayou
     }
     let index = index.min(layout.len);
     (part(layout, 0..index), part(layout, index..layout.len))
+}
+
+/// Reconstruct source text without turning independently shaped visual rows
+/// into hard newlines. TextLayout's byte length and caret offsets stay logical.
+pub(crate) fn source_text(lines: &[crate::WrappedLine]) -> String {
+    let mut text = String::new();
+    for (index, line) in lines.iter().enumerate() {
+        text.push_str(&line.text);
+        if !line.fast_soft_wrap && index + 1 < lines.len() {
+            text.push('\n');
+        }
+    }
+    text
 }
 
 pub(crate) fn line_advance(line: &crate::WrappedLine) -> usize {

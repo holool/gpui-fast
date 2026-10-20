@@ -7,7 +7,6 @@ use crate::{
 };
 use anyhow::Context as _;
 use gpui_util::ResultExt;
-use itertools::Itertools;
 use smallvec::SmallVec;
 use std::{
     borrow::Cow,
@@ -830,14 +829,7 @@ impl TextLayout {
 
     /// The text for this layout.
     pub fn text(&self) -> String {
-        self.0
-            .borrow()
-            .as_ref()
-            .unwrap()
-            .lines
-            .iter()
-            .map(|s| &s.text)
-            .join("\n")
+        crate::fast::bidi::source_text(&self.0.borrow().as_ref().unwrap().lines)
     }
 
     /// The text for this layout (with soft-wraps as newlines)
