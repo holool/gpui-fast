@@ -46,7 +46,7 @@ jobs:
         run: cargo test -p gpui --features test-support
 
       - name: Test empty directional text on the shared Cosmic backend
-        run: cargo test -p gpui_wgpu --lib empty_directional_text
+        run: cargo test -p gpui_wgpu --features test-support --lib empty_directional_text
 
       - name: Test native Arabic and empty directional shaping
         if: runner.os == 'macOS'
