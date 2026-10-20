@@ -593,6 +593,19 @@ pub(crate) fn split(layout: &LineLayout, index: usize) -> (LineLayout, LineLayou
     (part(layout, 0..index), part(layout, index..layout.len))
 }
 
+/// Reconstruct source text without turning independently shaped visual rows
+/// into hard newlines. TextLayout's byte length and caret offsets stay logical.
+pub(crate) fn source_text(lines: &[crate::WrappedLine]) -> String {
+    let mut text = String::new();
+    for (index, line) in lines.iter().enumerate() {
+        text.push_str(&line.text);
+        if !line.fast_soft_wrap && index + 1 < lines.len() {
+            text.push('\n');
+        }
+    }
+    text
+}
+
 pub(crate) fn line_advance(line: &crate::WrappedLine) -> usize {
     line.len() + usize::from(!line.fast_soft_wrap)
 }

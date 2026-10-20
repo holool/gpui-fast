@@ -106,3 +106,11 @@ fix absent from published wgpu 30.0.1. Android's single-API surface selection,
 GLES-compatible instance textures/limits, emulator Vulkan exclusion and debug
 label workaround are preserved. Upstream's new in-tree iOS crate does not replace
 Holool's separately maintained `gpui_ios` native host adapter.
+
+
+`TextLayout::text()` reconstructs logical source text while omitting synthetic
+separators between independently shaped RTL soft rows. This corrects an
+existing source getter without adding an API. Kit's new immutable selection
+and editor-host snapshots need source ranges, rather than assuming every
+shaped line ends in a newline; their native regression coverage checks both
+hard and soft boundaries against CoreText's original caret positions.

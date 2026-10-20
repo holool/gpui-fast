@@ -175,3 +175,26 @@ fn text_row_top_belongs_to_the_next_row() {
     );
     assert!(crate::fast::bidi::after_row(px(20.5), px(20.)));
 }
+
+#[test]
+fn source_text_preserves_hard_breaks_without_inserting_soft_wrap_bytes() {
+    let lines = [
+        ("مرحبا ", true),
+        ("بالعالم", false),
+        ("", false),
+        ("abc", false),
+    ]
+    .map(|(text, fast_soft_wrap)| crate::WrappedLine {
+        text: text.into(),
+        fast_soft_wrap,
+        layout: std::sync::Arc::new(crate::WrappedLineLayout::default()),
+        decoration_runs: Vec::new(),
+    });
+    let text = crate::fast::bidi::source_text(&lines);
+    assert_eq!(text, "مرحبا بالعالم\n\nabc");
+    assert_eq!(
+        text.len(),
+        lines.iter().map(|line| line.text.len()).sum::<usize>() + 2
+    );
+    assert_eq!(crate::fast::bidi::source_text(&[]), "");
+}
