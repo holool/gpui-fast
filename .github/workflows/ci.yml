@@ -45,9 +45,12 @@ jobs:
       - name: Test gpui
         run: cargo test -p gpui --features test-support
 
-      - name: Test native Arabic shaping
+      - name: Test empty directional text on the shared Cosmic backend
+        run: cargo test -p gpui_wgpu --lib empty_directional_text
+
+      - name: Test native Arabic and empty directional shaping
         if: runner.os == 'macOS'
-        run: cargo test -p gpui_apple --lib --features font-kit,runtime_shaders native_arabic
+        run: cargo test -p gpui_apple --lib --features font-kit,runtime_shaders rtl_tests
 
       - name: Test X11 contacts
         if: runner.os == 'Linux'

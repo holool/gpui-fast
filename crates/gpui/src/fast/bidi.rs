@@ -268,6 +268,8 @@ impl crate::WindowTextSystem {
         force_width: Option<Pixels>,
         direction: crate::LayoutDirection,
     ) -> crate::ShapedLine {
+        // Check the source before inserting a direction marker: an empty source
+        // can have no font runs, so shaping marker-only text violates coverage.
         if text.is_empty() || (!direction.is_rtl() && !has_rtl(&text)) {
             return self.shape_line(text, font_size, runs, force_width);
         }

@@ -75,6 +75,66 @@ mod rtl_tests {
     use crate::AppleTextSystem;
     use gpui::{LayoutDirection, TextRun, TextSystem, WindowTextSystem, black, font, px};
     use std::sync::Arc;
+    /// CE's empty directional text regression, exercised through Fast's marker path.
+    #[test]
+    fn empty_directional_text_keeps_source_offsets_without_font_runs() {
+        let system =
+            WindowTextSystem::new(Arc::new(TextSystem::new(Arc::new(AppleTextSystem::new()))));
+        // Repeat across directions to exercise fresh and cached empty layouts.
+        for _ in 0..2 {
+            for direction in [gpui::LayoutDirection::Ltr, gpui::LayoutDirection::Rtl] {
+                for runs in [
+                    Vec::new(),
+                    vec![gpui::TextRun {
+                        len: 0,
+                        font: gpui::font("Arial"),
+                        color: gpui::black(),
+                        background_color: None,
+                        underline: None,
+                        strikethrough: None,
+                    }],
+                ] {
+                    let line = system.shape_line_in_direction(
+                        "".into(),
+                        gpui::px(20.),
+                        &runs,
+                        None,
+                        direction,
+                    );
+                    assert!(line.text.is_empty());
+                    assert_eq!(line.len, 0);
+                    assert_eq!(line.width, gpui::px(0.));
+                    assert!(line.runs.iter().all(|run| run.glyphs.is_empty()));
+                    assert_eq!(line.x_for_index(0), gpui::px(0.));
+                    assert_eq!(line.closest_index_for_x(gpui::px(10.)), 0);
+                    for wrap_width in [None, Some(gpui::px(1.))] {
+                        let lines = system
+                            .shape_text_in_direction(
+                                "".into(),
+                                gpui::px(20.),
+                                &runs,
+                                wrap_width,
+                                None,
+                                direction,
+                            )
+                            .unwrap();
+                        assert_eq!(lines.len(), 1);
+                        assert!(lines[0].text.is_empty());
+                        assert_eq!(lines[0].len(), 0);
+                        assert_eq!(lines[0].unwrapped_layout.width, gpui::px(0.));
+                        assert!(
+                            lines[0]
+                                .unwrapped_layout
+                                .runs
+                                .iter()
+                                .all(|run| run.glyphs.is_empty())
+                        );
+                    }
+                }
+            }
+        }
+    }
+
     #[test]
     fn native_arabic_caret_geometry_and_wrapping_preserve_utf8() {
         let system =

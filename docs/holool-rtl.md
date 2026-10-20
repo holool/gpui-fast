@@ -81,3 +81,28 @@ Holool's bidi fields and APIs, so that rehearsal and publication run only in
 all-feature/backend compilation, web compilation, package contents, release
 order, and the normal native test matrix. It does not claim that Holool's code
 can be published under upstream's crate names and versions.
+
+
+## October 20 upstream sync and empty directional text
+
+The sync through longbridge/gpui-fast `b836dd970b26830f2124b7cf91b0e19018fd12da`
+includes the Zed `b4ecc45422` import, retained-row state fixes, accurate retained
+frame debug bounds and scroll translations, rounded-overflow clipping, and wgpu
+30. Holool's direction inheritance, native bidi geometry, and native mobile
+hooks remain in place.
+
+CE commit `337a8d3969d5478` fixes empty source text being made nonempty by bidi
+preprocessing without font runs. Fast uses CoreText, Cosmic and DirectWrite;
+it does not use CE's Parley code. Its existing `shape_line_in_direction` guard
+already checks the original empty source before inserting direction marks. This
+sync documents that invariant and adds native CoreText and font-isolated Cosmic
+regressions for empty input with no runs and zero-length runs, both directions,
+fresh/cached layouts, and wrapped/unwrapped shaping. Empty source lengths,
+zero advance, empty glyphs and caret byte offsets must remain unchanged.
+
+The source dependency retains upstream's wgpu Git revision
+`3b3506ea31154edc04de64debda0e780cba2639c`, which contains the Vulkan surface-drop
+fix absent from published wgpu 30.0.1. Android's single-API surface selection,
+GLES-compatible instance textures/limits, emulator Vulkan exclusion and debug
+label workaround are preserved. Upstream's new in-tree iOS crate does not replace
+Holool's separately maintained `gpui_ios` native host adapter.
