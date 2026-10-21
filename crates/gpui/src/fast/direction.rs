@@ -80,7 +80,7 @@ impl<T: Styled> Directional for T {}
 impl Window {
     /// Direction of the current element's inherited text/style context.
     pub fn layout_direction(&self) -> LayoutDirection {
-        self.text_style().fast_direction
+        self.text_style().fast_direction.unwrap_or_default()
     }
 }
 pub(crate) fn inherit_style(mut style: Style, window: &Window) -> Style {
