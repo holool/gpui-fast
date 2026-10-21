@@ -198,3 +198,90 @@ fn source_text_preserves_hard_breaks_without_inserting_soft_wrap_bytes() {
     );
     assert_eq!(crate::fast::bidi::source_text(&[]), "");
 }
+
+/// One sentence per probe, each under its own boundary.
+struct Sentences {
+    probes: Vec<(Option<LayoutDirection>, bool, &'static str)>,
+    layouts: Rc<RefCell<Vec<crate::TextLayout>>>,
+}
+impl Render for Sentences {
+    fn render(&mut self, _: &mut Window, _: &mut Context<Self>) -> impl IntoElement {
+        let mut layouts = self.layouts.borrow_mut();
+        layouts.clear();
+        div().w(px(400.)).children(
+            self.probes
+                .iter()
+                .map(|&(direction, logical_padding, text)| {
+                    let text = crate::StyledText::new(text);
+                    layouts.push(text.layout().clone());
+                    let row = if logical_padding {
+                        div().w_full().ps(px(4.))
+                    } else {
+                        div().w_full()
+                    };
+                    match direction {
+                        Some(direction) => row.direction(direction),
+                        None => row,
+                    }
+                    .child(text)
+                }),
+        )
+    }
+}
+
+/// The caret at every character boundary, from the left edge of the text,
+/// in tenths of a pixel.
+fn carets(layout: &crate::TextLayout, text: &str) -> Vec<i32> {
+    let left = layout.bounds().origin.x;
+    text.char_indices()
+        .map(|(index, _)| index)
+        .chain([text.len()])
+        .map(|index| {
+            ((layout.position_for_index(index).unwrap().x - left) / px(0.1)).round() as i32
+        })
+        .collect()
+}
+
+#[test]
+fn text_under_no_direction_boundary_takes_its_first_strong_base() {
+    let arabic = "تجاهل الكل.";
+    let latin = "Discard all.";
+    let probes = vec![
+        (None, false, arabic),
+        (None, true, arabic),
+        (Some(LayoutDirection::Ltr), false, arabic),
+        (Some(LayoutDirection::Rtl), false, arabic),
+        (None, false, latin),
+        (Some(LayoutDirection::Ltr), false, latin),
+    ];
+    let mut cx = TestAppContext::single();
+    let layouts = Rc::new(RefCell::new(Vec::new()));
+    let window = cx.add_window({
+        let layouts = layouts.clone();
+        move |_, _| Sentences { probes, layouts }
+    });
+    cx.update_window(window.into(), |_, window, cx| {
+        window.draw(cx).clear(cx);
+        assert_eq!(window.layout_direction(), LayoutDirection::Ltr);
+    })
+    .unwrap();
+    let layouts = layouts.borrow();
+    let [unset, padded, ltr, rtl] = [0, 1, 2, 3].map(|i| carets(&layouts[i], arabic));
+    assert_ne!(
+        ltr, rtl,
+        "the two bases must lay this Arabic out differently"
+    );
+    assert_eq!(
+        unset, rtl,
+        "Arabic under no boundary takes a right-to-left base, as under .rtl(): its full stop goes to the left"
+    );
+    assert_eq!(
+        padded, rtl,
+        "logical padding must not turn an unset direction into a left-to-right base"
+    );
+    assert_eq!(
+        carets(&layouts[4], latin),
+        carets(&layouts[5], latin),
+        "Latin under no boundary keeps a left-to-right base"
+    );
+}
