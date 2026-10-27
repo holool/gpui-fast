@@ -120,3 +120,23 @@ existing source getter without adding an API. Kit's new immutable selection
 and editor-host snapshots need source ranges, rather than assuming every
 shaped line ends in a newline; their native regression coverage checks both
 hard and soft boundaries against CoreText's original caret positions.
+
+
+## October 27 release sync
+
+Sync Longbridge GPUI Fast v0.1.12 (`07b42ebf1f43088b8b74a7d4fca6b95e44e04265`),
+including the Zed `08cbb88a15` import and the 0.3.10 support snapshot. Compatibility
+stand-ins also use 0.3.10. Preserve first-strong paragraph shaping when no direction
+boundary is set, explicit inherited direction, logical edges, native bidi geometry,
+soft-wrap source offsets, accessibility extensions and mobile renderer hooks.
+
+Taffy 0.15 replaces 0.14; upstream GPUI now implements leaf measurement directly,
+so the old Fast measurement adapter is removed. Native font caches, objc2 macOS
+bindings, the unmeasured-text prepaint safety net and Windows demand-driven frame
+scheduling are included. The Rust toolchain moves to 1.99.0 because the imported
+macOS code requires APIs unavailable in the previous 1.95 toolchain.
+
+The GPUI snapshot also changes keyboard and scroll APIs: secondary-modifier helpers
+receive the App, dynamic keybindings use OS-aware loading, scroll events are named
+`ScrollEvent`/`PlatformInput::Scroll`, and scroll literals identify their source.
+These upstream API changes require matching Kit and native host dependencies.

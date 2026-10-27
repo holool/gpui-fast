@@ -21,6 +21,7 @@ pub(crate) mod composition;
 pub(crate) mod dependencies;
 pub(crate) mod direction;
 pub(crate) mod dispatch;
+pub(crate) mod geometry;
 pub(crate) mod global_id;
 pub(crate) mod glyphs;
 pub(crate) mod interactivity;
