@@ -442,7 +442,8 @@ pub enum TextAlign {
 #[refineable(Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 pub struct TextStyle {
     /// Inherited inline direction, including fast retained layout contexts.
-    pub fast_direction: crate::fast::direction::LayoutDirection,
+    /// `None` until a direction boundary sets one.
+    pub fast_direction: Option<crate::fast::direction::LayoutDirection>,
 
     /// The color of the text
     pub color: Hsla,
@@ -493,7 +494,7 @@ pub struct TextStyle {
 impl Default for TextStyle {
     fn default() -> Self {
         TextStyle {
-            fast_direction: crate::fast::direction::LayoutDirection::default(),
+            fast_direction: None,
             color: black(),
             // todo(linux) make this configurable or choose better default
             font_family: ".SystemUIFont".into(),

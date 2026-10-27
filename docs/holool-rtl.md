@@ -25,6 +25,10 @@ are distinguished from actual newlines when mapping TextLayout byte offsets.
 set paragraph base direction. Their cache keys include an invisible leading
 Unicode direction mark; it is removed from published text, runs, and byte
 indices. Ordinary shaping keeps each paragraph's first-strong direction.
+A text element below a direction boundary takes the boundary's direction as
+its paragraph base. Below no boundary, `TextStyle.fast_direction` is `None` and
+the text keeps each paragraph's first-strong direction, while layout runs left
+to right ([decision](decisions/2026-10-21-text-base-direction.md)).
 `LineLayout::{selection_ranges,visual_caret}` expose disjoint selection spans
 and visual grapheme navigation. `LineLayout.fast_bidi` is optional shared
 metadata: native constructors initialize it or leave it empty for the shared
@@ -49,7 +53,9 @@ script/check-upstream
 
 API compatibility: adding `TextStyle.fast_direction`, `Style.fast_logical`, and
 `LineLayout.fast_bidi` requires downstream exhaustive struct literals to include
-the new fields or use `..Default::default()`. Platform test-support exposes
+the new fields or use `..Default::default()`. `TextStyle.fast_direction` is an
+`Option<LayoutDirection>`; read the window's direction with
+`Window::layout_direction()`. Platform test-support exposes
 `gpui_macos::text_system_for_tests()` for native shaping without an AppKit app.
 Full CSS `direction:auto` layout inference and caret affinity at the two visual
 positions of a mixed-direction boundary are not introduced by this patch.

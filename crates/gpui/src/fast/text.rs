@@ -379,19 +379,28 @@ fn measure_text(
     };
     let len = text.len();
 
-    let shaped = if text_style.fast_direction.is_rtl() || crate::fast::bidi::has_rtl(&text) {
-        window.text_system().shape_text_in_direction(
+    // A direction boundary sets the paragraph base of the text below it.
+    // Text below no boundary keeps each paragraph's first-strong base, as
+    // `shape_text` gives it: Arabic that ends in a full stop must not take a
+    // left-to-right base only because no element asked for one.
+    let shaped = match text_style.fast_direction {
+        Some(direction) if direction.is_rtl() || crate::fast::bidi::has_rtl(&text) => {
+            window.text_system().shape_text_in_direction(
+                text,
+                font_size,
+                &runs,
+                wrap_width,
+                text_style.line_clamp,
+                direction,
+            )
+        }
+        _ => window.text_system().shape_text(
             text,
             font_size,
             &runs,
             wrap_width,
             text_style.line_clamp,
-            text_style.fast_direction,
-        )
-    } else {
-        window
-            .text_system()
-            .shape_text(text, font_size, &runs, wrap_width, text_style.line_clamp)
+        ),
     };
     let Some(lines) = shaped.log_err() else {
         layout.0.borrow_mut().replace(TextLayoutInner {
@@ -1105,7 +1114,7 @@ mod tests {
                 ),
             ] {
                 let mut text_style = crate::fast::text_style::text_style(window);
-                std::rc::Rc::make_mut(&mut text_style).fast_direction = direction;
+                std::rc::Rc::make_mut(&mut text_style).fast_direction = Some(direction);
                 let font_size = text_style.font_size.to_pixels(window.rem_size());
                 let line_height = text_style
                     .line_height
